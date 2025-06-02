@@ -15,7 +15,9 @@ class AcousticScreen:
         self.start_position_dalay = 0 #[m]
         self.terain_milage_dalay = 0 # [m]
         self.min_elevation = 0.05 # [m]
-
+        self.length = None
+        
+        self.main_axes = {}
 
         # objects
         self.terrain_profile = None

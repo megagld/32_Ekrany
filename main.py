@@ -7,14 +7,14 @@ from drawer import *
 
 ekran = AcousticScreen()
 
-# tworzenie profilu terenu
-input_dir = os.getcwd()
-project_data_dir = '{}\\{}'.format(input_dir, '_project')
-terrain_data_path = '{}\\{}\\{}'.format(input_dir, '_project', '01_Terrain_data')
-piles_data_path = '{}\\{}\\{}'.format(input_dir, '_project', '03_Piles_data')
-
 
 # pobiera pliki z katalogu _data i podkatalogów
+input_dir = os.getcwd()
+project_data_dir = '{}\\{}'.format(input_dir, '_project')
+terrain_data_path = '{}\\{}'.format(project_data_dir, '01_Terrain_data')
+piles_data_path = '{}\\{}'.format(project_data_dir, '03_Piles_data')
+
+
 # profil terenu
     
 for root, _, files in os.walk(terrain_data_path):
@@ -75,17 +75,45 @@ for number, pile in enumerate(ekran.piles.values(),1):
         ekran.panels[number].calc_width() 
 
 
+# ustalenie przesunięcia pala wzgledem profilu rozwiniecia terenu
+# do zmiany!
+
+ekran.terain_milage_dalay = 0.01
+
+# ustalenie głównych osi przęseł
+
+lenght_sum = 0
+for number, panel in ekran.panels.items():
+    ekran.main_axes[number] = lenght_sum
+    lenght_sum += panel.width
+ekran.main_axes[number+1] = lenght_sum
+ekran.length = lenght_sum
+
+
+
+
 
 # tworzy obiekt "malarza" i
 drawer = Drawer()
 
-# #  rysuje profil terenu
+# setup rysunku
+drawer.add_layers()
+
+# rysuje profil terenu
 drawer.draw_terrain(ekran.terrain_profile)
+
+# rysuje osie na profilu(tabelka)
+drawer.draw_axes_in_table(ekran.main_axes)
+
+# rysuje bazę tabeli
+drawer.draw_table(ekran.length)
+
+# wstawia wartości do tabeli
+drawer.draw_table_values(ekran.main_axes)
+
 
 
 # rysuje pale na planie
 # drawer.draw_piles_on_plan(ekran.piles)
 
 
-for i in ekran.panels.values():
-    print(i.width)
