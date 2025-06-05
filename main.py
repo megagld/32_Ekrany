@@ -50,7 +50,7 @@ for root, _, files in os.walk(terrain_data_path):
 
 ekran.terrain_profile.move_terrain_horizontaly(ekran.terain_milage_dalay)
 
-# wspórzędne pali
+# tworzenie obiektów pali na podstawie ich wspórzędnych
 
 for root, _, files in os.walk(piles_data_path):
     for file in files:
@@ -62,19 +62,10 @@ for root, _, files in os.walk(piles_data_path):
             
             for number, position in enumerate(data, 1):
                 ekran.piles[number] = Pile()
-                ekran.piles[number].description_name = f'pile_{file[:-10]}_{number:03d}'
+                ekran.piles[number].description_name = f'pile_{file[:-23]}_{number:03d}'
 
-                ekran.piles[number].x_coord = position[0]
-                ekran.piles[number].y_coord = position[1]
-
-                # dodanie pozyzji Z=0 jeśli brakuje w danych
-                try:
-                    ekran.piles[number].z_coord = position[2]
-                except:
-                    ekran.piles[number].z_coord = 0
-
-
-
+                ekran.piles[number].position = Point(x=position[0],y=position[1])
+                    
             # xxxxxxxxxxxxxx USUŃ xxxxxxxxxxxxxxxxx
                 ekran.piles[number].diameter = 0.6
             # xxxxxxxxxxxxxx USUŃ xxxxxxxxxxxxxxxxx
@@ -89,17 +80,29 @@ for number, pile in enumerate(ekran.piles.values(),1):
     ekran.main_axes[number] = MainAxis()
     ekran.main_axes[number].number = number
     ekran.main_axes[number].description_name = pile.description_name.replace('pile', 'axis')
-    ekran.main_axes[number].x_coord = pile.x_coord
-    ekran.main_axes[number].y_coord = pile.y_coord
+
+    ekran.main_axes[number].position = pile.position
+    ekran.main_axes[number].position.z = None
+
+# przyporządkowanie osi poprzedzająch i kolejnych
+for number, axis in ekran.main_axes.items():
+    try:
+        axis.previous_axis = ekran.main_axes[number-1]
+    except:
+        pass
+    try:
+        axis.next_axis = ekran.main_axes[number+1]
+    except:
+        pass
 
 #  ustalenie odległości miedzy osiami
 
 distance_on_profile = 0
 
 for axis_number, axis in ekran.main_axes.items():
-    axis.distance_on_profile = distance_on_profile
+    axis.position.x_position_on_profile = distance_on_profile
     if axis_number<len(ekran.main_axes):
-        axis.calc_width(ekran.main_axes[axis_number+1])
+        axis.calc_next_span_length()
         distance_on_profile += axis.next_span_length
         
 # ustalenie długości ekranu na profilu
@@ -116,19 +119,19 @@ for axis_number, axis in ekran.main_axes.items():
 
     for number, terrain_point in ekran.terrain_profile.profile.items():
 
-        if axis.distance_on_profile>terrain_point.x_position_on_profile:
+        if axis.position.x_position_on_profile>terrain_point.x_position_on_profile:
             delta_x = ekran.terrain_profile.profile[number+1].x_position_on_profile - terrain_point.x_position_on_profile
             delta_y = ekran.terrain_profile.profile[number+1].z - terrain_point.z
-            axis_delta_x = axis.distance_on_profile - terrain_point.x_position_on_profile
-            axis.terrain_z_position = (axis_delta_x/delta_x)*delta_y + terrain_point.z
-            ekran.terrain_profile.new_tarrain_profile[axis_number] = Point(x_position_on_profile = axis.distance_on_profile, 
-                                                                           z = axis.terrain_z_position)
+            axis_delta_x = axis.position.x_position_on_profile - terrain_point.x_position_on_profile
+            axis.z_coord_terrain = (axis_delta_x/delta_x)*delta_y + terrain_point.z
+            ekran.terrain_profile.new_tarrain_profile[axis_number] = Point(x_position_on_profile = axis.position.x_position_on_profile, 
+                                                                           z = axis.z_coord_terrain)
 
 
 # obliczanie rzędnych pali na osiach głównych
 
 for axis in ekran.main_axes.values():
-    axis.z_coord_pile = math.ceil(10*(axis.terrain_z_position))/10 + ekran.min_elevation
+    axis.z_coord_pile = math.ceil(10*(axis.z_coord_terrain))/10 + ekran.min_elevation
     
 
 # tworzenie obiektów słupów i ustalenie ich wysokości
@@ -147,16 +150,19 @@ for root, _, files in os.walk(poles_data_path):
                 ekran.poles[number].description_name = f'pole_{file[:-17]}_{number:03d}'
                 ekran.poles[number].type = type
 
+                # na razie jest to jednoznaczne z nazwą bloku cada - do zmiany
+                ekran.poles[number].acad_block_name = ekran.poles[number].type
+
                 
             # xxxxxxxxxxxxxx USUŃ xxxxxxxxxxxxxxxxx
                 ekran.poles[number].height = 5.0
                 ekran.start_higher_load_axes_number = 4
                 ekran.end_higher_load_axes_number = 4
             # xxxxxxxxxxxxxx USUŃ xxxxxxxxxxxxxxxxx
-            
 
             f.close()
 
+            
 # ustalenie pala (nazwy bloku) na podstawie wysokości słupa i czy słup jest wzmocniony
 for pole_number, pole in ekran.poles.items():
     if pole_number <= ekran.start_higher_load_axes_number or pole_number > len(ekran.poles)-ekran.end_higher_load_axes_number:
@@ -171,22 +177,19 @@ for pole_number, pole in ekran.poles.items():
 # przypisanie wspórzędnych do pala
 
 for axis_number, axis in ekran.main_axes.items():
-    ekran.piles[axis_number].x_coord = axis.x_coord
-    ekran.piles[axis_number].y_coord = axis.y_coord
-    ekran.piles[axis_number].z_coord = axis.z_coord_pile
+
+    ekran.piles[axis_number].postion = axis.position
+    ekran.piles[axis_number].postion.z = axis.z_coord_pile
+
+# przypisanie pozycji dla słupów
+
+for axis_number, axis in ekran.main_axes.items():
+
+    ekran.poles[axis_number].position = axis.position
+    ekran.poles[axis_number].position.z = axis.z_coord_pile
 
 
-# tworzenie obiektów paneli na podstawie lokalizacji pali
-
-# for number, pile in enumerate(ekran.piles.values(),1):
-#     if number<len(ekran.piles):
-#         ekran.panels[number] = Panel()
-#         ekran.panels[number].number = number
-#         ekran.panels[number].description_name = pile.description_name.replace('pile', 'panel')
-#         ekran.panels[number].position = pile.position
-#         ekran.panels[number].end_position = ekran.piles[number+1].position
-#         ekran.panels[number].calc_width() 
-
+# tworzenie obiektów paneli
 
 
 
@@ -195,11 +198,7 @@ for axis_number, axis in ekran.main_axes.items():
 
 
 
-
-
-
-
-# tworzy obiekt "malarza" i
+# tworzy obiekt "malarza"
 drawer = Drawer()
 
 # setup rysunku
@@ -207,10 +206,6 @@ drawer.add_layers()
 
 # rysuje profil terenu
 drawer.draw_terrain(ekran.terrain_profile)
-
-# czyści obiekty acad osi głównych - do zmiany jeśli będzie wersja okienkowa!
-
-# ekran.clear_cad_objects(ekran.main_axes)
 
 # rysuje osie na profilu(tabelka)
 drawer.draw_axes_in_table(ekran.main_axes)
@@ -222,9 +217,9 @@ drawer.draw_table(ekran.length)
 drawer.draw_table_values(ekran.main_axes)
 
 # rysuje pale na rozwinieciu
-drawer.draw_piles(ekran.piles, ekran.main_axes)
+drawer.draw_piles(ekran.piles)
 
-# rysuje pale na planie
-# drawer.draw_piles_on_plan(ekran.piles)
+# rysuje słupy na rozwinięciu
+drawer.draw_poles(ekran.poles)
 
-
+print('gotowe')

@@ -20,16 +20,18 @@ class AcousticScreen:
         self.start_higher_load_axes_number = 0
         self.end_higher_load_axes_number = 0
         
-        self.main_axes = {}
 
         # objects
         self.terrain_profile = None
+        self.main_axes = {}
+
         self.piles = {}
         self.poles = {}
         self.panels = {}
         self.ground_beams = {}
 
     def clear_cad_objects(self, objects):
+        #do poprawy, bo nie kasuje wszystkiego
         for object in objects.values():
             for cad_object in object.cad_objects:
                 print(cad_object)
@@ -44,21 +46,20 @@ class ConstructionObject:
         self.height = None # [m]
         self.width = None
 
-        # usun
-        self.position = None
-        # usun
-
-        self.x_coord = None
-        self.y_coord = None
-        self.z_coord = None
+        self.position = Point()
 
         self.cad_objects = []
         self.acad_block_name = None
 
+    def clear_cad_objects(self):
+        for cad_object in self.cad_objects:
+                print(cad_object)
+                cad_object.Delete()
+
 class Panel(ConstructionObject):
     def __init__(self):
         super().__init__() 
-        self.end_position = None
+
 
 class Pole(ConstructionObject):
     def __init__(self):
@@ -84,7 +85,7 @@ class Pile(ConstructionObject):
                             7.5	:'P10_P',
                             8	:'P11_P'}
         
-        # jeśli słup jest być wzmocniony - zwiększa to pal o jedną pozycję wg szeregu - do rozbudowania
+        # jeśli słup jest być wzmocniony - zwiększa to pal o jedną pozycję wg szeregu - metoda do rozbudowania
         if higher_load_pole:
             pole_height+=1
 
@@ -121,26 +122,29 @@ class MainAxis:
         self.number = None
         self.description_name = None
 
-        # usun
-        self.position = None
-        # usun
+        self.previous_axis = None
+        self.next_axis = None
 
-        self.x_coord = None
-        self.y_coord = None
+        self.position = Point()  # z=0
 
-        self.distance_on_profile = None
         self.next_span_length = None
 
-        self.terrain_z_position = None
+        self.z_coord_terrain = None        
         self.z_coord_pile = None
 
         self.cad_objects = []
 
-    def calc_width(self, next_axis):
-        next_span_length = ((self.x_coord - next_axis.x_coord)**2 + (self.y_coord - next_axis.y_coord)**2)**0.5
-        self.next_span_length = round(next_span_length)
-        if abs(self.next_span_length-next_span_length)>0.03:
-            print(f'błąd rozstawienia pali - {abs(self.next_span_length-next_span_length)}')
+    def calc_next_span_length(self):
+        if self.next_axis != None:
+            next_span_length = ((self.position.x - self.next_axis.position.x)**2 + (self.position.y - self.next_axis.position.y)**2)**0.5
+            self.next_span_length = round(next_span_length)
+            if abs(self.next_span_length-next_span_length)>0.03:
+                print(f'błąd rozstawienia pali - {abs(self.next_span_length-next_span_length)}')
+                print(self.number)
+                
+    def clear_cad_objects(self):
+        for cad_object in self.cad_objects:
+                cad_object.Delete()
 
 class Point:
     def __init__(self, x=None, y=None, z=None, x_position_on_profile = None):
