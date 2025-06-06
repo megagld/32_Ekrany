@@ -311,7 +311,6 @@ drawer.draw_ground_beams(ekran.ground_beams)
 # rysuje panele na rozwinięciu
 drawer.draw_panels(ekran.panels)
 
-
 # rysuje opis nad rozwinięciem
 
 x_pos = ekran.length//2

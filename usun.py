@@ -1,7 +1,5 @@
-from pyzwcad import *
+from drawer import *
+# tworzy obiekt "malarza"
+drawer = Drawer()
 
-a=[1,2,3]
-b= [7402913.71, 5711851.47, 0]
-
-x = APoint(b)
-print(x)
+drawer.add_layout('e')

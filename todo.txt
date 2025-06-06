@@ -2,3 +2,4 @@
 - dodać warunek z wyrównaniem poziomu pali przy drzwiach
 - dodać pobieranie z excela
 - dodać okienko tkinter
+- dodać generator layoutu - z rzutniami i ramką i doborem papieru

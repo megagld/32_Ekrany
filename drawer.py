@@ -233,3 +233,10 @@ class Drawer:
                 tmp = self.acad.doc.Layers.Add(layer)
                 tmp.color = color
                 tmp.Linetype = linetype
+
+
+    def add_layout(self, layout_name):
+        if layout_name not in (layout.Name for layout in self.acad.doc.Layouts):
+            layout = self.acad.doc.Layouts.Add(layout_name)
+        
+            self.acad.doc.ActiveLayout = layout
