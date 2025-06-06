@@ -76,29 +76,29 @@ class Pile(ConstructionObject):
     def choose_pile(self, pole_height, higher_load_pole= False):
         # dobiera pal na podstawie wysokości ekranu - do rozbudowania
         # dodaje tez dłogośc słup - też do rozubudy
-        piles_type_data =  {2:'P1',
-                            2.5:'P2',
-                            3	:'P3',
-                            3.5	:'P4',
-                            4	:'P5',
-                            5	:'P6',
-                            6	:'P7',
-                            6.5	:'P8_P',
-                            7	:'P9_P',
-                            7.5	:'P10_P',
-                            8	:'P11_P'}
+        piles_type_data = {2    : 'P1',
+                           2.5  : 'P2',
+                           3    : 'P3',
+                           3.5	: 'P4',
+                           4	: 'P5',
+                           5	: 'P6',
+                           6	: 'P7',
+                           6.5	: 'P8_P',
+                           7	: 'P9_P',
+                           7.5	: 'P10_P',
+                           8	: 'P11_P'}
         
-        piles_height_data = {2  : 3,
-                             2.5: 3.5,
-                             3  : 4,
-                             3.5: 4,
-                             4  : 4.5,
-                             5  : 5,
-                             6  : 5.5,
-                             6.5: 6,
-                             7  : 6,
-                             7.5: 6.5,
-                             8  : 7}
+        piles_height_data = {2   : 3,
+                             2.5 : 3.5,
+                             3   : 4,
+                             3.5 : 4,
+                             4   : 4.5,
+                             5   : 5,
+                             6   : 5.5,
+                             6.5 : 6,
+                             7   : 6,
+                             7.5 : 6.5,
+                             8   : 7}
         
         # jeśli słup jest być wzmocniony - zwiększa to pal o jedną pozycję wg szeregu - metoda do rozbudowania
         if higher_load_pole:
