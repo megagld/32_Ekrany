@@ -4,10 +4,13 @@ import json
 from classes import *
 from drawer import *
 import math
+import copy
 
 
 ekran = AcousticScreen()
 
+ekran.description_name = 'EL01'
+ekran.height = 5
 
 # pobiera pliki z katalogu _data i podkatalogów
 input_dir = os.getcwd()
@@ -133,7 +136,6 @@ for axis_number, axis in ekran.main_axes.items():
 for axis in ekran.main_axes.values():
     axis.z_coord_pile = math.ceil(10*(axis.z_coord_terrain))/10 + ekran.min_elevation
     
-
 # tworzenie obiektów słupów i ustalenie ich wysokości
 
 # na razie analogicznie do starego skryptu - tj. ręcznie
@@ -167,6 +169,8 @@ for root, _, files in os.walk(poles_data_path):
 for pole_number, pole in ekran.poles.items():
     if pole_number <= ekran.start_higher_load_axes_number or pole_number > len(ekran.poles)-ekran.end_higher_load_axes_number:
         higher_load_pole = True
+        ekran.piles[pole_number].extension = True
+
     ekran.piles[pole_number].choose_pile(pole.height, higher_load_pole)
     higher_load_pole = False
     
@@ -188,8 +192,87 @@ for axis_number, axis in ekran.main_axes.items():
     ekran.poles[axis_number].position = axis.position
     ekran.poles[axis_number].position.z = axis.z_coord_pile
 
+# tworzenie bloków podwalin
+
+for axis_number, axis in ekran.main_axes.items():
+
+    # jeżeli to nie jest ostatnie przęsło ani przęsło z drzwiami to
+    if axis.next_span_length != None or axis.next_span_doors != False:
+
+        ekran.ground_beams[axis_number] = GroundBeam()
+        ekran.ground_beams[axis_number].number = axis.number
+        ekran.ground_beams[axis_number].position = axis.position
+        ekran.ground_beams[axis_number].position.z = axis.z_coord_pile
+        ekran.ground_beams[axis_number].width = axis.next_span_length
+
+# ustalenie różnicy wysokości dla wcięć podwalin i czy są poszerzenia na pale
+# do zmiany tak żeby uwzgledniał poszerzenie jednostronne podwaliny
+
+for axis_number, axis in ekran.main_axes.items():
+    # jeżeli to nie jest ostatnie przęsło to
+    if axis.next_span_length != None:
+        ekran.ground_beams[axis_number].detla_z =round(axis.z_coord_pile - ekran.main_axes[axis_number+1].z_coord_pile, 1)
+        
+        if ekran.piles[axis_number].extension == True or ekran.piles[axis_number].extension == True:
+            ekran.ground_beams[axis_number].extension = True
+
+# ustalenie nazwy podwaliny (bloku) na podstawie rozpiętośc przęsła, różnicy kolejnych pali i czy pale są poszerzone
+# do zmiany tak żeby uwzgledniał poszerzenie jednostronne podwaliny
+
+
+for ground_beam in ekran.ground_beams.values():
+
+    name = []
+
+    name.append(str(int(ground_beam.width)))
+    name.append(str(int(ground_beam.detla_z*10)))
+    if ground_beam.extension ==True:
+        name.append('P')
+                
+    ground_beam.acad_block_name = '_'.join(name)
 
 # tworzenie obiektów paneli
+
+for axis_number, axis in ekran.main_axes.items():
+
+    # jeżeli to nie jest ostatnie przęsło to
+    if axis.next_span_length != None:
+
+        ekran.panels[axis_number] = Panel()
+        ekran.panels[axis_number].number = axis.number
+        ekran.panels[axis_number].position = copy.deepcopy(axis.position)
+        ekran.panels[axis_number].position.z = axis.z_coord_pile
+        if ekran.ground_beams[axis_number].detla_z > 0:
+            ekran.panels[axis_number].position.z -= ekran.ground_beams[axis_number].detla_z
+
+# przypisanie typu ekranu i wysokości
+
+# zmienić żeby pobierało dane z excela
+for panel in ekran.panels.values():
+    panel.type = 1 
+    panel.height = 5
+
+# ustalenie nazwy panela (bloku) na podstawie wysokości słupa, rozpiętośc przęsła, typu ekanu i czy przęsło ma drzwi
+
+for panel_number, panel in ekran.panels.items():
+    name = []
+
+    if panel.doors == True:
+        name.append('DZ')
+    else:
+        name.append('P')
+
+    name.append(str(int(ekran.main_axes[panel_number].next_span_length)))
+    name.append(str(int(panel.height)))
+    name.append(str(int(panel.type)))
+
+
+    ekran.panels[panel_number].acad_block_name = '_'.join(name)
+
+
+
+
+
 
 
 
@@ -221,5 +304,38 @@ drawer.draw_piles(ekran.piles)
 
 # rysuje słupy na rozwinięciu
 drawer.draw_poles(ekran.poles)
+
+# rysuje belki podwalinowe na rozwinięciu
+drawer.draw_ground_beams(ekran.ground_beams)
+
+# rysuje panele na rozwinięciu
+drawer.draw_panels(ekran.panels)
+
+
+# rysuje opis nad rozwinięciem
+
+x_pos = ekran.length//2
+y_pos = ekran.piles[len(ekran.main_axes)//2].position.z + ekran.height
+
+drawer.draw_title(ekran.description_name, x_pos, y_pos)
+
+
+
+
+
+
+# rysuje wymiary
+
+text_position = min(pile.position.z - pile.height for pile in ekran.piles.values()) - 1
+
+dimenstion_positions = []
+for axis_number, axis in ekran.main_axes.items():
+    if axis.next_span_length != None:
+        dimenstion_positions.append([Point(x=axis.position.x_position_on_profile, y=axis.z_coord_pile-ekran.piles[axis_number].height),
+                                    Point(x=axis.next_axis.position.x_position_on_profile, y=axis.next_axis.z_coord_pile-ekran.piles[axis_number+1].height),
+                                    Point(x=axis.position.x_position_on_profile, y=text_position)])
+
+
+drawer.draw_dimensions(dimenstion_positions)
 
 print('gotowe')

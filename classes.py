@@ -59,6 +59,7 @@ class ConstructionObject:
 class Panel(ConstructionObject):
     def __init__(self):
         super().__init__() 
+        self.doors = False
 
 
 class Pole(ConstructionObject):
@@ -70,9 +71,11 @@ class Pile(ConstructionObject):
     def __init__(self):
         super().__init__() 
         self.diameter = None # [m]
+        self.extension = False
 
     def choose_pile(self, pole_height, higher_load_pole= False):
         # dobiera pal na podstawie wysokości ekranu - do rozbudowania
+        # dodaje tez dłogośc słup - też do rozubudy
         piles_type_data =  {2:'P1',
                             2.5:'P2',
                             3	:'P3',
@@ -85,16 +88,34 @@ class Pile(ConstructionObject):
                             7.5	:'P10_P',
                             8	:'P11_P'}
         
+        piles_height_data = {2  : 3,
+                             2.5: 3.5,
+                             3  : 4,
+                             3.5: 4,
+                             4  : 4.5,
+                             5  : 5,
+                             6  : 5.5,
+                             6.5: 6,
+                             7  : 6,
+                             7.5: 6.5,
+                             8  : 7}
+        
         # jeśli słup jest być wzmocniony - zwiększa to pal o jedną pozycję wg szeregu - metoda do rozbudowania
         if higher_load_pole:
             pole_height+=1
 
         self.type = piles_type_data[pole_height]
+        self.height = piles_height_data[pole_height]
+
+
+
 
 
 class GroundBeam(ConstructionObject):
     def __init__(self):
         super().__init__() 
+        self.detla_z = None
+        self.extension = False
 
 
 class Terrain(ConstructionObject):
@@ -128,6 +149,8 @@ class MainAxis:
         self.position = Point()  # z=0
 
         self.next_span_length = None
+
+        self.next_span_doors = False
 
         self.z_coord_terrain = None        
         self.z_coord_pile = None

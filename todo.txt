@@ -1,0 +1,4 @@
+- wymiary i teksy jako obiekty
+- dodać warunek z wyrównaniem poziomu pali przy drzwiach
+- dodać pobieranie z excela
+- dodać okienko tkinter

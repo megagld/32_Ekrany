@@ -57,6 +57,28 @@ class Drawer:
             pile.cad_object.layer = 'm_pale'
             pile.cad_object.color = 256
 
+    def draw_panels(self, panels):
+
+        for number, panel in panels.items():
+            position = APoint(panel.position.x_position_on_profile,
+                              panel.position.z)
+            panel.cad_object = self.acad.model.InsertBlock(position,
+                                                          panel.acad_block_name,
+                                                          1, 1, 1, 0)
+            panel.cad_object.layer = 'm_panele'
+            panel.cad_object.color = 256
+
+    def draw_ground_beams(self, ground_beams):
+
+        for number, ground_beam in ground_beams.items():
+            position = APoint(ground_beam.position.x_position_on_profile,
+                              ground_beam.position.z)
+            ground_beam.cad_object = self.acad.model.InsertBlock(position,
+                                                          ground_beam.acad_block_name,
+                                                          1, 1, 1, 0)
+            ground_beam.cad_object.layer = 'm_podwaliny'
+            ground_beam.cad_object.color = 256
+
     def draw_poles(self, poles):
 
         for number, pole in poles.items():
@@ -115,9 +137,9 @@ class Drawer:
     def draw_table_values(self, main_axes):
 
         self.acad.doc.ActiveLayer = self.acad.doc.Layers['m_tabelka']
-        for i in self.acad.doc.Colors:
-            print(i)
-        # self.acad.doc.ActiveColor = 10
+        # for i in self.acad.doc.Colors:
+        #     print(i)
+        # # self.acad.doc.ActiveColor = 10
 
 
 
@@ -155,6 +177,43 @@ class Drawer:
             text.color = 1
             text.rotation = math.pi/2
             axis.cad_objects.append(text)
+
+    def draw_title(self, description, x_pos, y_pos):
+            
+            self.acad.doc.ActiveLayer = self.acad.doc.Layers['m_tekst']
+
+            point_1 = APoint(x_pos, y_pos + 4)
+            point_2 = APoint(x_pos, y_pos + 2.5)
+
+            text_height = 1
+            text = self.acad.model.AddText(
+                f'%%UEKRAN AKUSTYCZNY {description}', point_1, text_height)
+            text.Alignment = 4
+            text.color = 256
+
+            text_height = 0.75
+            text = self.acad.model.AddText(
+                '%%Uskala 1:200', point_2, text_height)
+            text.Alignment = 4
+            text.color = 1
+
+    def draw_dimensions(self, dimenstion_positions):
+            
+        self.acad.doc.ActiveLayer = self.acad.doc.Layers['m_wymiary']
+        self.acad.doc.ActiveDimStyle = self.acad.doc.DimStyles['CDM-ME200ME']
+        # self.acad.doc.CurrentColor = 256 ?????
+
+        
+        for dimension in dimenstion_positions:
+            point_1 = APoint(dimension[0].x, dimension[0].y)
+            point_2 = APoint(dimension[1].x, dimension[1].y)
+            point_3 = APoint(dimension[2].x, dimension[2].y)
+
+
+            dimension = self.acad.model.AddDimRotated(point_1,point_2,point_3,0)
+            dimension.color = 256
+
+            # axis.cad_objects.append(text)
 
     def add_layers(self):
 
