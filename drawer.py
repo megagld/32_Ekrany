@@ -10,7 +10,6 @@ class Drawer:
 
         self.acad = pyzwcad.ZwCAD()
 
-
         self.acad.prompt("Ekrany akustyczne - rozwiniecia\n")
         print(self.acad.doc.Name)
 
@@ -178,43 +177,45 @@ class Drawer:
             text.rotation = math.pi/2
             axis.cad_objects.append(text)
 
-    def draw_title(self, description, x_pos, y_pos):
+    def draw_title(self, descriptions):
             
             self.acad.doc.ActiveLayer = self.acad.doc.Layers['m_tekst']
 
-            point_1 = APoint(x_pos, y_pos + 4)
-            point_2 = APoint(x_pos, y_pos + 2.5)
+            point_1 = APoint(descriptions.main_dercription_position.x_position_on_profile,
+                              descriptions.main_dercription_position.z + 4)
+            point_2 = APoint(descriptions.main_dercription_position.x_position_on_profile,
+                              descriptions.main_dercription_position.z + 2.5)
 
             text_height = 1
-            text = self.acad.model.AddText(
-                f'%%UEKRAN AKUSTYCZNY {description}', point_1, text_height)
-            text.Alignment = 4
-            text.color = 256
+            text_1 = self.acad.model.AddText(
+                descriptions.main_dercription, point_1, text_height)
+            text_1.Alignment = 4
+            text_1.color = 256
 
             text_height = 0.75
-            text = self.acad.model.AddText(
+            text_2 = self.acad.model.AddText(
                 '%%Uskala 1:200', point_2, text_height)
-            text.Alignment = 4
-            text.color = 1
+            text_2.Alignment = 4
+            text_2.color = 1
 
-    def draw_dimensions(self, dimenstion_positions):
+            descriptions.cad_objects.append(text_1)
+            descriptions.cad_objects.append(text_2)
+
+    def draw_dimensions(self, descriptions):
             
         self.acad.doc.ActiveLayer = self.acad.doc.Layers['m_wymiary']
         self.acad.doc.ActiveDimStyle = self.acad.doc.DimStyles['CDM-ME200ME']
         # self.acad.doc.CurrentColor = 256 ?????
-
         
-        for dimension in dimenstion_positions:
+        for dimension in descriptions.dimenstions:
             point_1 = APoint(dimension[0].x, dimension[0].y)
             point_2 = APoint(dimension[1].x, dimension[1].y)
             point_3 = APoint(dimension[2].x, dimension[2].y)
 
-
             dimension = self.acad.model.AddDimRotated(point_1,point_2,point_3,0)
             dimension.color = 256
-
-            # axis.cad_objects.append(text)
-
+            descriptions.cad_objects.append(dimension)
+            
     def add_layers(self):
 
         layers_setup = [('m_tekst', 2, 'continuous'),
@@ -233,7 +234,6 @@ class Drawer:
                 tmp = self.acad.doc.Layers.Add(layer)
                 tmp.color = color
                 tmp.Linetype = linetype
-
 
     def add_layout(self, layout_name):
         if layout_name not in (layout.Name for layout in self.acad.doc.Layouts):

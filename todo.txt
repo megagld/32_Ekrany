@@ -1,5 +1,11 @@
-- wymiary i teksy jako obiekty
-- dodać warunek z wyrównaniem poziomu pali przy drzwiach
+
+todo:
 - dodać pobieranie z excela
+- dodać warunek z wyrównaniem poziomu pali przy drzwiach
 - dodać okienko tkinter
 - dodać generator layoutu - z rzutniami i ramką i doborem papieru
+
+
+done:
+- wymiary i teksy jako obiekty
+- ustalić strukturę katalogów
