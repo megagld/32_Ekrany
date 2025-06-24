@@ -152,9 +152,9 @@ class Drawer:
 
         for axis in main_axes.values():
 
-            point_1 = APoint(axis.position.x_position_on_profile - 0.2, 0.2)
-            point_2 = APoint(axis.position.x_position_on_profile - 0.2, 2.7)
-            point_3 = APoint(axis.position.x_position_on_profile - 0.2, 5.2)
+            point_1 = APoint(axis.position.x_position_on_profile - 0.3, 0.2)
+            point_2 = APoint(axis.position.x_position_on_profile - 0.3, 2.7)
+            point_3 = APoint(axis.position.x_position_on_profile - 0.3, 5.2)
 
             text = self.acad.model.AddText(
                 f'{axis.position.x_position_on_profile:.1f}', point_1, text_height)

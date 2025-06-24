@@ -1,11 +1,13 @@
 
 todo:
 - dodać pobieranie z excela
-- dodać warunek z wyrównaniem poziomu pali przy drzwiach
+
 - dodać okienko tkinter
 - dodać generator layoutu - z rzutniami i ramką i doborem papieru
+- uwzględnić zmianę kilometraża
 
 
 done:
 - wymiary i teksy jako obiekty
 - ustalić strukturę katalogów
+- dodać warunek z wyrównaniem poziomu pali przy drzwiach

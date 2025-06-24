@@ -16,7 +16,7 @@ class AcousticScreen:
         self.height = None # [m]
         self.type = None
         self.terain_milage_dalay = 0 # [m]
-        self.axis_number_delay = None # do zmiany!!!!!!!!!! bo z excela pobiera '-'
+        self.first_axis_number = None # do zmiany!!!!!!!!!! bo z excela pobiera '-'
         self.mileage_delay = None # [km] # do zmiany!!!!!!!!!! bo z excela pobiera '-'
         self.previous_screen = None
         self.next_screen = None
@@ -28,8 +28,6 @@ class AcousticScreen:
         # self.start_position_dalay = 0 #[m]  ?????? po co to
         self.min_elevation = 0.05 # [m]
         self.length = None
-
-
         
         # objects
         self.terrain_profile = None
@@ -61,24 +59,30 @@ class AcousticScreen:
     def get_piles_data(self, data):
         # tworzenie obiektów pali na podstawie ich wspórzędnych
 
-        for number, position in enumerate(data, 1):
-            self.piles[number] = Pile()
-            self.piles[number].description_name = f'pile_{self.description_name}_{number:03d}'
-            self.piles[number].position = Point(x=position[0],
+        for number, position in enumerate(data):
+            axis_numer = number + self.first_axis_number
+
+            self.piles[axis_numer] = Pile()
+            self.piles[axis_numer].number = axis_numer
+            self.piles[axis_numer].description_name = f'pile_{self.description_name}_{axis_numer:03d}'
+            self.piles[axis_numer].position = Point(x=position[0],
                                                 y=position[1])
 
     def get_poles_data(self, data):
         # tworzenie obiektów słupów i ustalenie ich wysokości
         # na razie analogicznie do starego skryptu - tj. ręcznie
 
-        for number, type in enumerate(data, 1):
-            self.poles[number] = Pole()
-            self.poles[number].description_name = f'pole_{self.description_name}_{number:03d}'
-            self.poles[number].type = type
+        for number, type in enumerate(data):
+            axis_numer = number + self.first_axis_number
+            
+            self.poles[axis_numer] = Pole()
+            self.poles[axis_numer].number = axis_numer
+            self.poles[axis_numer].description_name = f'pole_{self.description_name}_{axis_numer:03d}'
+            self.poles[axis_numer].type = type
 
             # na razie jest to jednoznaczne z nazwą bloku cada - do zmiany
-            self.poles[number].acad_block_name = self.poles[number].type
-            self.poles[number].height = self.height
+            self.poles[axis_numer].acad_block_name = self.poles[axis_numer].type
+            self.poles[axis_numer].height = self.height
                 
     def make(self):
 
@@ -103,22 +107,25 @@ class AcousticScreen:
 
         # tworzenie osi głównych na podstawie współrzędnych pali
 
-        for number, pile in enumerate(self.piles.values(),1):
-            self.main_axes[number] = MainAxis()
-            self.main_axes[number].number = number
-            self.main_axes[number].description_name = pile.description_name.replace('pile', 'axis')
+        for number, pile in enumerate(self.piles.values()):
+            axis_numer = number + self.first_axis_number
 
-            self.main_axes[number].position = pile.position
-            self.main_axes[number].position.z = None
+            self.main_axes[axis_numer] = MainAxis()
+
+            self.main_axes[axis_numer].number = axis_numer
+            self.main_axes[axis_numer].description_name = pile.description_name.replace('pile', 'axis')
+
+            self.main_axes[axis_numer].position = pile.position
+            self.main_axes[axis_numer].position.z = None
 
         # przyporządkowanie osi poprzedzająch i kolejnych
-        for number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
             try:
-                axis.previous_axis = self.main_axes[number-1]
+                axis.previous_axis = self.main_axes[axis.number-1]
             except:
                 pass
             try:
-                axis.next_axis = self.main_axes[number+1]
+                axis.next_axis = self.main_axes[axis.number+1]
             except:
                 pass
 
@@ -128,9 +135,11 @@ class AcousticScreen:
 
         for axis_number, axis in self.main_axes.items():
             axis.position.x_position_on_profile = distance_on_profile
-            if axis_number<len(self.main_axes):
+            try:
                 axis.calc_next_span_length()
                 distance_on_profile += axis.next_span_length
+            except:
+                pass
                 
         # ustalenie długości selfu na profilu
         self.length = distance_on_profile
@@ -142,7 +151,7 @@ class AcousticScreen:
 
         # oblicznie rzędnych terenu w osiach głównych
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
 
             for number, terrain_point in self.terrain_profile.profile.items():
 
@@ -151,64 +160,77 @@ class AcousticScreen:
                     delta_y = self.terrain_profile.profile[number+1].z - terrain_point.z
                     axis_delta_x = axis.position.x_position_on_profile - terrain_point.x_position_on_profile
                     axis.z_coord_terrain = (axis_delta_x/delta_x)*delta_y + terrain_point.z
-                    self.terrain_profile.new_tarrain_profile[axis_number] = Point(x_position_on_profile = axis.position.x_position_on_profile, 
+                    self.terrain_profile.new_tarrain_profile[axis.number] = Point(x_position_on_profile = axis.position.x_position_on_profile, 
                                                                                 z = axis.z_coord_terrain)
 
+        # ustalenie poziomu terenu dla przęseł z drzwiami (poziom pali i terenu w przęśle ma być ten sam)
+
+        for axis in self.main_axes.values():
+            if axis.number in self.doors_position:
+                axis.next_axis.z_coord_terrain = axis.z_coord_terrain
+                self.terrain_profile.new_tarrain_profile[axis.next_axis.number].z = axis.next_axis.z_coord_terrain
+        
         # obliczanie rzędnych pali na osiach głównych
 
         for axis in self.main_axes.values():
             axis.z_coord_pile = math.ceil(10*(axis.z_coord_terrain))/10 + self.min_elevation
-        
                     
         # ustalenie pala (nazwy bloku) na podstawie wysokości słupa i czy słup jest wzmocniony
-        for pole_number, pole in self.poles.items():
-            if pole_number <= self.start_higher_load_axes_number or pole_number > len(self.poles)-self.end_higher_load_axes_number:
+        for pole in self.poles.values():
+            
+            if pole.number <= self.start_higher_load_axes_number or pole.number > len(self.poles)+self.first_axis_number-1:
                 higher_load_pole = True
-                self.piles[pole_number].extension = True
+            else:
+                higher_load_pole = False
 
-            self.piles[pole_number].choose_pile(pole.height, higher_load_pole)
-            higher_load_pole = False
+
+            self.piles[pole.number].choose_pile(pole.height, higher_load_pole)
+
             
             # na razie jest to jednoznaczne z nazwą bloku cada - do zmiany
-            self.piles[pole_number].acad_block_name = self.piles[pole_number].type
+            self.piles[pole.number].acad_block_name = self.piles[pole.number].type
             
         # przypisanie wspórzędnych do pala
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
 
-            self.piles[axis_number].postion = axis.position
-            self.piles[axis_number].postion.z = axis.z_coord_pile
+            self.piles[axis.number].postion = axis.position
+            self.piles[axis.number].postion.z = axis.z_coord_pile
 
         # przypisanie pozycji dla słupów
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
 
-            self.poles[axis_number].position = axis.position
-            self.poles[axis_number].position.z = axis.z_coord_pile
+            self.poles[axis.number].position = axis.position
+            self.poles[axis.number].position.z = axis.z_coord_pile
 
         # tworzenie bloków podwalin
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
 
             # jeżeli to nie jest ostatnie przęsło ani przęsło z drzwiami to
             if axis.next_span_length != None or axis.next_span_doors != False:
 
-                self.ground_beams[axis_number] = GroundBeam()
-                self.ground_beams[axis_number].number = axis.number
-                self.ground_beams[axis_number].position = axis.position
-                self.ground_beams[axis_number].position.z = axis.z_coord_pile
-                self.ground_beams[axis_number].width = axis.next_span_length
+                self.ground_beams[axis.number] = GroundBeam()
+                self.ground_beams[axis.number].number = axis.number
+                self.ground_beams[axis.number].position = axis.position
+                self.ground_beams[axis.number].position.z = axis.z_coord_pile
+                self.ground_beams[axis.number].width = axis.next_span_length
 
-        # ustalenie różnicy wysokości dla wcięć podwalin i czy są poszerzenia na pale
+        # ustalenie różnicy wysokości dla wcięć podwalin i czy są poszerzenia na pale albo szerokie pale
         # do zmiany tak żeby uwzgledniał poszerzenie jednostronne podwaliny
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
             # jeżeli to nie jest ostatnie przęsło to
             if axis.next_span_length != None:
-                self.ground_beams[axis_number].detla_z =round(axis.z_coord_pile - self.main_axes[axis_number+1].z_coord_pile, 1)
+                self.ground_beams[axis.number].detla_z =round(axis.z_coord_pile - axis.next_axis.z_coord_pile, 1)
                 
-                if self.piles[axis_number].extension == True or self.piles[axis_number].extension == True:
-                    self.ground_beams[axis_number].extension = True
+                if any((self.piles[axis.number].extension == True,
+                        self.piles[axis.number+1].extension == True,
+                        self.piles[axis.number].head_diameter == 0.8,
+                        self.piles[axis.number+1].head_diameter == 0.8)):
+
+                    self.ground_beams[axis.number].extension = True
 
         # ustalenie nazwy podwaliny (bloku) na podstawie rozpiętośc przęsła, różnicy kolejnych pali i czy pale są poszerzone
         # do zmiany tak żeby uwzgledniał poszerzenie jednostronne podwaliny
@@ -227,28 +249,32 @@ class AcousticScreen:
 
         # tworzenie obiektów paneli
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
 
             # jeżeli to nie jest ostatnie przęsło to
             if axis.next_span_length != None:
 
-                self.panels[axis_number] = Panel()
-                self.panels[axis_number].number = axis.number
-                self.panels[axis_number].position = copy.deepcopy(axis.position)
-                self.panels[axis_number].position.z = axis.z_coord_pile
-                if self.ground_beams[axis_number].detla_z > 0:
-                    self.panels[axis_number].position.z -= self.ground_beams[axis_number].detla_z
+                self.panels[axis.number] = Panel()
+                self.panels[axis.number].number = axis.number
+                self.panels[axis.number].position = copy.deepcopy(axis.position)
+                self.panels[axis.number].position.z = axis.z_coord_pile
+                if self.ground_beams[axis.number].detla_z > 0:
+                    self.panels[axis.number].position.z -= self.ground_beams[axis.number].detla_z
 
         # przypisanie typu ekranu i wysokości
 
-        # zmienić żeby pobierało dane z excela
         for panel in self.panels.values():
-            panel.type = 1 
-            panel.height = 5
+            panel.type = self.type 
+            panel.height = self.height
+
+        # przypisanie do obiektów paneli informacji czy są drzwi
+
+        for axis_number in self.doors_position:
+            self.panels[axis_number].doors = True
 
         # ustalenie nazwy panela (bloku) na podstawie wysokości słupa, rozpiętośc przęsła, typu ekanu i czy przęsło ma drzwi
 
-        for panel_number, panel in self.panels.items():
+        for panel in self.panels.values():
             name = []
 
             if panel.doors == True:
@@ -256,12 +282,12 @@ class AcousticScreen:
             else:
                 name.append('P')
 
-            name.append(str(int(self.main_axes[panel_number].next_span_length)))
+            name.append(str(int(self.main_axes[panel.number].next_span_length)))
             name.append(str(int(panel.height)))
             name.append(str(int(panel.type)))
 
 
-            self.panels[panel_number].acad_block_name = '_'.join(name)
+            self.panels[panel.number].acad_block_name = '_'.join(name)
 
 
         # tworzenie opisów
@@ -282,20 +308,17 @@ class AcousticScreen:
 
         self.dimenstions_text_z_position = text_position
 
-        for axis_number, axis in self.main_axes.items():
+        for axis in self.main_axes.values():
             if axis.next_span_length != None:
                 self.descriptions.dimenstions.append([Point(x=axis.position.x_position_on_profile,
-                                                            y=axis.z_coord_pile-self.piles[axis_number].height),
+                                                            y=axis.z_coord_pile-self.piles[axis.number].height),
                                                     Point(x=axis.next_axis.position.x_position_on_profile,
-                                                            y=axis.next_axis.z_coord_pile-self.piles[axis_number+1].height),
+                                                            y=axis.next_axis.z_coord_pile-self.piles[axis.number+1].height),
                                                     Point(x=axis.position.x_position_on_profile,
                                                             y=text_position)])
 
 
     def draw_profil(self):
-
-
-
         # tworzy obiekt "malarza"
         drawer = Drawer()
 
@@ -375,6 +398,7 @@ class Pile(ConstructionObject):
     def __init__(self):
         super().__init__() 
         self.diameter = None # [m]
+        self.head_diameter = None # [m]
         self.extension = False
 
     def choose_pile(self, pole_height, higher_load_pole= False):
@@ -387,10 +411,10 @@ class Pile(ConstructionObject):
                            4	: 'P5',
                            5	: 'P6',
                            6	: 'P7',
-                           6.5	: 'P8_P',
-                           7	: 'P9_P',
-                           7.5	: 'P10_P',
-                           8	: 'P11_P'}
+                           6.5	: 'P8',
+                           7	: 'P9',
+                           7.5	: 'P10',
+                           8	: 'P11'}
         
         piles_height_data = {2   : 3,
                              2.5 : 3.5,
@@ -404,13 +428,38 @@ class Pile(ConstructionObject):
                              7.5 : 6.5,
                              8   : 7}
         
+        piles_diameter_data = {2: 0.6,
+                               2.5: 0.6,
+                               3: 0.6,
+                               3.5: 0.6,
+                               4: 0.6,
+                               5: 0.6,
+                               6: 0.6,
+                               6.5: 0.6,
+                               7: 0.8,
+                               7.5: 0.8,
+                               8: 0.8}
+
+        piles_head_diameter_data = {2: 0.6,
+                                           2.5: 0.6,
+                                           3: 0.6,
+                                           3.5: 0.6,
+                                           4: 0.6,
+                                           5: 0.6,
+                                           6: 0.8,
+                                           6.5: 0.8,
+                                           7: 0.8,
+                                           7.5: 0.8,
+                                           8: 0.8}
+        
         # jeśli słup jest być wzmocniony - zwiększa to pal o jedną pozycję wg szeregu - metoda do rozbudowania
         if higher_load_pole:
             pole_height+=1
 
         self.type = piles_type_data[pole_height]
         self.height = piles_height_data[pole_height]
-
+        self.diameter = piles_diameter_data[pole_height]
+        self.head_diameter = piles_head_diameter_data[pole_height]
 
 class GroundBeam(ConstructionObject):
     def __init__(self):

@@ -26,8 +26,8 @@ for col in range(1,ws.max_column):
     screen.description_name                 = ws[2][col].value
     screen.height                           = ws[3][col].value
     screen.type                             = ws[4][col].value
-    screen.terain_milage_dalay              = ws[5][col].value
-    screen.axis_number_delay                = ws[6][col].value
+    screen.terain_milage_dalay              = ws[5][col].value 
+    screen.first_axis_number                = ws[6][col].value
     screen.mileage_delay                    = ws[7][col].value
     screen.previous_screen                  = ws[8][col].value
     screen.next_screen                      = ws[9][col].value
@@ -38,14 +38,14 @@ for col in range(1,ws.max_column):
 
     ekrany.append(screen)
 
-for screen in ekrany:
+for screen in ekrany[2:3]:
     try:
         # pobierz dane o terenie
         ws = wb[screen.description_name]
-        terrain_data = [[ws[row][5].value,ws[row][6].value] for row in range(2,ws.max_row+1) if ws[row][5].value]
+        terrain_data = [[ws[row][5].value,ws[row][6].value] for row in range(2,ws.max_row+1) if ws[row][6].value]
         screen.get_terrain_data(terrain_data)
 
-        # tu dodać i zamienić to niżej na  tworzenie obiektu osi oraz od razu wszystkich obiektów przyległych - pustych
+        # tu dodać i zamienić to niżej na tworzenie obiektu osi oraz od razu wszystkich obiektów przyległych - pustych
 
         # pobierz dane o lokalizacjach pali - może do zmiany na osie, bo są głównym obiektem
         piles_data = [[ws[row][2].value,ws[row][3].value] for row in range(2,ws.max_row+1) if ws[row][2].value]
@@ -58,5 +58,9 @@ for screen in ekrany:
     except:
         print(f'brak danych dla ekranu: {screen.description_name}')
 
-ekrany[0].make()
-ekrany[0].draw_profil()
+rysuj = 2
+
+
+ekrany[rysuj].make()
+ekrany[rysuj].draw_profil()
+pass
